@@ -1,2 +1,13 @@
 # Queue-bot
-Telegram bot for managing lab defense queues: fixed slots, join a specific spot, swap places, let someone go ahead, view the queue, export results to Excel. Built with aiogram, PostgreSQL, Docker.
+
+Telegram-бот для черги на здачу лабораторних.
+
+## Локальний запуск
+
+```bash
+cp .env.example .env        # вписати BOT_TOKEN
+docker compose up -d db
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python -m app.main
+```
