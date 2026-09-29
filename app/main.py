@@ -10,6 +10,8 @@ from aiohttp import web
 from app.config import settings
 from app.handlers import get_root_router
 
+from app.db.base import init_db
+
 log = logging.getLogger(__name__)
 
 
@@ -18,13 +20,17 @@ def build() -> tuple[Bot, Dispatcher]:
         token=settings.BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
+
     dp = Dispatcher()
+    
     dp.include_router(get_root_router())
+    
     return bot, dp
 
 
 async def run_polling() -> None:
     bot, dp = build()
+    await init_db() 
     # Якщо раніше було встановлено webhook, polling не працюватиме.
     await bot.delete_webhook(drop_pending_updates=True)
     log.info("Starting in polling mode")
@@ -36,6 +42,7 @@ def run_webhook() -> None:
     webhook_full_url = settings.WEBHOOK_URL.rstrip("/") + settings.WEBHOOK_PATH
 
     async def on_startup(bot: Bot) -> None:
+        await init_db() 
         await bot.set_webhook(
             webhook_full_url,
             secret_token=settings.WEBHOOK_SECRET,
