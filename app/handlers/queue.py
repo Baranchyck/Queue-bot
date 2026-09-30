@@ -4,7 +4,7 @@ from aiogram import Router
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.types import Message
 
-from app.services.queue import create_queue, get_queue
+from app.services.queue import create_queue, get_queue, join_queue, leave_queue
 
 router = Router()
 
@@ -58,3 +58,27 @@ async def cmd_queue(message: Message) -> None:
     await message.answer(
         f"<b>{escape(queue.title)}</b>\n<pre>" + "\n".join(lines) + "</pre>"
     )
+
+@router.message(Command('join_queue'))
+async def cmd_join_queue(message: Message):
+    try:
+        position = int(message.text.split()[1])
+    except (ValueError, IndexError):
+        await message.answer('Вкажи коректний номер позиції, наприклад /join_queue 5')
+        return
+
+    reply = await join_queue(
+        chat_id=message.chat.id,
+        user_id=message.from_user.id,
+        name=message.from_user.first_name,
+        pos=position,
+    )
+    await message.answer(reply)
+
+@router.message(Command('leave_queue'))
+async def cmd_leave_queue(message: Message):
+    reply = await leave_queue(
+        chat_id=message.chat.id,
+        user_id=message.from_user.id,
+    )
+    await message.answer(reply)

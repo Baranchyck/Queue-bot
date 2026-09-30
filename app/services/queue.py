@@ -1,4 +1,5 @@
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 
 from app.db.base import SessionLocal
 from app.db.models import Queue, Slot
@@ -35,3 +36,46 @@ async def get_queue(chat_id):
             )
         ).scalars().all()
         return queue, list(slot)
+
+async def join_queue(chat_id: int, user_id: int, name: str, pos: int) -> str:
+    data = await get_queue(chat_id)
+    if data is None:
+        return "Черги немає, створи через /create"
+    queue, _ = data
+    async with SessionLocal() as session:
+        try:
+            result = await session.execute(
+                update(Slot)
+                .where(
+                    Slot.queue_id == queue.id,
+                    Slot.position == pos,
+                    Slot.user_id.is_(None),
+                )
+                .values(user_id=user_id, user_name=name)
+            )
+            await session.commit()
+        except IntegrityError:
+            await session.rollback()
+            return "Ти вже стоїш у черзі"
+
+    if result.rowcount == 0: # type: ignore
+        return "Це місце зайняте (або такого немає)"
+    return f"Записав на місце {pos}"
+
+async def leave_queue(chat_id: int, user_id: int) -> str:
+    data = await get_queue(chat_id)
+    if data is None:
+        return "Черги немає, створи через /create"
+    queue, _ = data
+
+    async with SessionLocal() as session:
+        result = await session.execute(
+            update(Slot)
+            .where(Slot.queue_id == queue.id, Slot.user_id == user_id)
+            .values(user_id=None, user_name=None)
+        )
+        await session.commit()
+
+    if result.rowcount == 0:  # type: ignore
+        return "Ти й так не стоїш у черзі"
+    return "Тебе видалено з черги"
