@@ -1,32 +1,12 @@
 from html import escape
 
-from datetime import datetime
+from aiogram import Router
+from aiogram.filters import Command, CommandObject
+from aiogram.types import Message
 
-from aiogram import F, Router
-from aiogram.filters import Command, CommandObject, CommandStart
-from aiogram.types import CallbackQuery, Message, BufferedInputFile
-
-from app.keyboards.swap import swap_kb
-from app.services.queue import prepare_swap, swap_slots
-
-from app.services.queue import create_queue, get_queue, join_queue, leave_queue, prepare_swap, swap_slots, build_xlsx
+from app.services.queue import create_queue, get_queue, join_queue, leave_queue
 
 router = Router()
-
-
-@router.message(CommandStart())
-async def cmd_start(message: Message) -> None:
-    await message.answer(
-        "Привіт! Я бот для черги на здачу лаб.\n\n"
-        "/create — створити чергу\n"
-        "/queue — показати чергу\n"
-        "/join — стати на місце\n"
-        "/leave — вийти з черги\n"
-        "/back — пропустити наступного\n"
-        "/swap — помінятись місцями\n"
-        "/export — вивантажити в Excel"
-    )
-
 
 @router.message(Command("create"))
 async def cmd_create(message: Message, command: CommandObject) -> None:
@@ -64,7 +44,7 @@ async def cmd_queue(message: Message) -> None:
         f"<b>{escape(queue.title)}</b>\n<pre>" + "\n".join(lines) + "</pre>"
     )
 
-@router.message(Command('join_queue'))
+@router.message(Command('join'))
 async def cmd_join_queue(message: Message):
     try:
         position = int(message.text.split()[1])
@@ -80,7 +60,7 @@ async def cmd_join_queue(message: Message):
     )
     await message.answer(reply)
 
-@router.message(Command('leave_queue'))
+@router.message(Command('leave'))
 async def cmd_leave_queue(message: Message):
     reply = await leave_queue(
         chat_id=message.chat.id,
@@ -88,56 +68,3 @@ async def cmd_leave_queue(message: Message):
     )
     await message.answer(reply)
 
-@router.message(Command('swap'))
-async def cmd_swap(message: Message):
-    try:
-        pos = int(message.text.split()[1])
-    except (ValueError, IndexError):
-        await message.answer('Вкажи номер місця, наприклад /swap 5')
-        return
-
-    error, pair = await prepare_swap(message.chat.id, message.from_user.id, pos)
-    if error:
-        await message.answer(error)
-        return
-
-    me, target = pair
-    await message.answer(
-        f'{target.user_name}, {me.user_name} (місце {me.position}) '
-        f'пропонує помінятись з твоїм місцем {target.position}. Погоджуєшся?',
-        reply_markup=swap_kb(me.user_id, me.position, target.user_id, target.position),
-    )
-
-
-@router.callback_query(F.data.startswith('swap_'))
-async def cb_swap(callback: CallbackQuery):
-    action, *rest = callback.data.split(':')
-    from_user, from_pos, to_user, to_pos = map(int, rest)
-
-    if callback.from_user.id != to_user:
-        await callback.answer('Цей запит не для тебе', show_alert=True)
-        return
-
-    if action == 'swap_no':
-        text = 'Обмін відхилено'
-    else:
-        text = await swap_slots(
-            callback.message.chat.id, from_user, from_pos, to_user, to_pos
-        )
-
-    await callback.message.edit_text(text) 
-    await callback.answer()  
-
-@router.message(Command('export'))
-async def cmd_export(message: Message):
-    data = await get_queue(message.chat.id)
-    if data is None:
-        await message.answer('Черги немає, створи через /create')
-        return
-
-    queue, slots = data
-    file = BufferedInputFile(
-        build_xlsx(slots),
-        filename=f'queue_{datetime.now():%Y-%m-%d}.xlsx',
-    )
-    await message.answer_document(file, caption=queue.title)

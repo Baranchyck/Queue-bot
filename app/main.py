@@ -22,20 +22,16 @@ def build() -> tuple[Bot, Dispatcher]:
     )
 
     dp = Dispatcher()
-    
     dp.include_router(get_root_router())
     
     return bot, dp
 
-
 async def run_polling() -> None:
     bot, dp = build()
     await init_db() 
-    # Якщо раніше було встановлено webhook, polling не працюватиме.
     await bot.delete_webhook(drop_pending_updates=True)
     log.info("Starting in polling mode")
     await dp.start_polling(bot)
-
 
 def run_webhook() -> None:
     bot, dp = build()
@@ -65,7 +61,6 @@ def run_webhook() -> None:
 
     web.run_app(app, host=settings.HOST, port=settings.PORT)
 
-
 def main() -> None:
     logging.basicConfig(
         level=logging.INFO,
@@ -75,7 +70,6 @@ def main() -> None:
         run_webhook()
     else:
         asyncio.run(run_polling())
-
 
 if __name__ == "__main__":
     main()

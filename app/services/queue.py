@@ -10,7 +10,6 @@ from io import BytesIO
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font
-from app.keyboards import swap
 
 async def create_queue(chat_id, owner_id, title):
     async with SessionLocal() as session, session.begin():

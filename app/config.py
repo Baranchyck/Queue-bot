@@ -4,7 +4,6 @@ from typing import Literal
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -38,6 +37,5 @@ class Settings(BaseSettings):
         if self.MODE == "webhook" and not (self.WEBHOOK_URL and self.WEBHOOK_SECRET):
             raise ValueError("MODE=webhook потребує WEBHOOK_URL і WEBHOOK_SECRET")
         return self
-
 
 settings = Settings()
