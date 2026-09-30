@@ -2,7 +2,7 @@ from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
-from app.keyboards.swap import swap_kb
+from app.keyboards.kb_swap import swap_kb
 from app.services.queue import prepare_swap, swap_slots
 
 router = Router()
