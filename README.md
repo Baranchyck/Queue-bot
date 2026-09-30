@@ -41,6 +41,7 @@ Queue-bot/
 ├── requirements.txt
 ├── test_queue.py
 └── README.md
+```
 
 ## Локальний запуск
 
