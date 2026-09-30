@@ -1,5 +1,5 @@
 import asyncio
-from app.services.queue import create_queue, get_queue
+from app.services.ser_queue import create_queue, get_queue
 
 async def main():
     await create_queue(1, 10, "test")

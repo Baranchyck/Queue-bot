@@ -4,7 +4,7 @@ from aiogram import Router
 from aiogram.filters import Command, CommandObject
 from aiogram.types import Message
 
-from app.services.queue import create_queue, get_queue, join_queue, leave_queue
+from app.services.ser_queue import create_queue, get_queue, join_queue, leave_queue
 
 router = Router()
 

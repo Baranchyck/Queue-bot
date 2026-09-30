@@ -3,7 +3,8 @@ from aiogram.filters import Command
 from aiogram.types import Message, BufferedInputFile
 from datetime import datetime
 
-from app.services.queue import get_queue, build_xlsx
+from app.services.ser_queue import get_queue
+from app.services.ser_export import build_xlsx
 
 router = Router()
 

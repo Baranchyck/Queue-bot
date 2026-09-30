@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
 from app.keyboards.kb_swap import swap_kb
-from app.services.queue import prepare_swap, swap_slots
+from app.services.ser_swap import prepare_swap, swap_slots
 
 router = Router()
 
