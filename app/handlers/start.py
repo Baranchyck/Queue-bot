@@ -1,18 +1,18 @@
-from aiogram import Router
-from aiogram.filters import CommandStart
+from aiogram import Router, types
+from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
+
+from app.commands import COMMANDS
 
 router = Router()
 
 @router.message(CommandStart())
-async def cmd_start(message: Message) -> None:
-    await message.answer(
-        "Привіт! Я бот для черги на здачу лаб.\n\n"
-        "/create — створити чергу\n"
-        "/queue — показати чергу\n"
-        "/join — стати на місце\n"
-        "/leave — вийти з черги\n"
-        "/back — пропустити наступного\n"
-        "/swap — помінятись місцями\n"
-        "/export — вивантажити в Excel"
-    )
+async def start(message: types.Message):
+    await message.answer("Привіт! Я бот для черги на здачу лаб.\n"
+                         'Щоб почати — /help')
+
+@router.message(Command('help'))
+async def help(message: types.Message):
+    text = f"\n".join(f"{i}. <code>{cmd.command}</code> — {cmd.description}" for i, cmd in enumerate(COMMANDS, 1))
+    await message.answer(f'Команди: \n' \
+                         f'{text}', parse_mode="HTML")    

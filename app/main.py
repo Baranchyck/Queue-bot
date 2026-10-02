@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from middleware.mid_logging import Logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -8,11 +7,12 @@ from aiogram.enums import ParseMode
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 
+from app.commands import COMMANDS
 from app.config import settings
-from app.logging_config import setup_logging
-from app.handlers import get_root_router
-
 from app.db.base import init_db
+from app.handlers import get_root_router
+from app.logging_config import setup_logging
+from middleware.mid_logging import Logging
 
 log = logging.getLogger(__name__)
 
@@ -23,17 +23,23 @@ def build() -> tuple[Bot, Dispatcher]:
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     dp = Dispatcher()
-    dp.update.middleware(Logging())
+    dp.update.outer_middleware(Logging())
     dp.include_router(get_root_router())
-    
     return bot, dp
+
+
+async def setup_commands(bot: Bot) -> None:
+    await bot.set_my_commands(COMMANDS)
+
 
 async def run_polling() -> None:
     bot, dp = build()
-    await init_db() 
+    await init_db()
+    await setup_commands(bot)
     await bot.delete_webhook(drop_pending_updates=True)
     log.info("Starting in polling mode")
     await dp.start_polling(bot)
+
 
 def run_webhook() -> None:
     bot, dp = build()
@@ -41,6 +47,7 @@ def run_webhook() -> None:
 
     async def on_startup(bot: Bot) -> None:
         await init_db()
+        await setup_commands(bot)
         await bot.set_webhook(
             webhook_full_url,
             secret_token=settings.WEBHOOK_SECRET,
