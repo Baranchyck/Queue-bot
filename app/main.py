@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from middleware.mid_logging import Logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -8,6 +9,7 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 from aiohttp import web
 
 from app.config import settings
+from app.logging_config import setup_logging
 from app.handlers import get_root_router
 
 from app.db.base import init_db
@@ -20,8 +22,8 @@ def build() -> tuple[Bot, Dispatcher]:
         token=settings.BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
-
     dp = Dispatcher()
+    dp.update.middleware(Logging())
     dp.include_router(get_root_router())
     
     return bot, dp
@@ -38,7 +40,7 @@ def run_webhook() -> None:
     webhook_full_url = settings.WEBHOOK_URL.rstrip("/") + settings.WEBHOOK_PATH
 
     async def on_startup(bot: Bot) -> None:
-        await init_db() 
+        await init_db()
         await bot.set_webhook(
             webhook_full_url,
             secret_token=settings.WEBHOOK_SECRET,
@@ -47,7 +49,6 @@ def run_webhook() -> None:
         log.info("Webhook set: %s", webhook_full_url)
 
     async def health(_: web.Request) -> web.Response:
-        # Для health-check Render і для зовнішнього пінгера (проти засинання).
         return web.Response(text="ok")
 
     dp.startup.register(on_startup)
@@ -59,17 +60,16 @@ def run_webhook() -> None:
     ).register(app, path=settings.WEBHOOK_PATH)
     setup_application(app, dp, bot=bot)
 
-    web.run_app(app, host=settings.HOST, port=settings.PORT)
+    web.run_app(app, host=settings.HOST, port=settings.PORT, access_log=None)
+
 
 def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
+    setup_logging()
     if settings.MODE == "webhook":
         run_webhook()
     else:
         asyncio.run(run_polling())
+
 
 if __name__ == "__main__":
     main()
